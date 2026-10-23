@@ -28,11 +28,15 @@ birthday), streamed from a desktop in true fullscreen.
   - Figure small, centred horizontally, near the bottom; Outfit and background change per Month.
   - Start screen "Thank you 24th..." + play icon. End screen "Hello 25th!" on October; tap replays.
   - Unlisted: not linked anywhere, `noindex`. No password.
+  - No text is selectable (`user-select: none` globally). Lyrics and screen text use a big, heavy,
+    thick bold font.
 - Skills: `/prototype` for the Figure ticket; `/grilling` when a decision is unclear.
 
 ## Decisions so far
 
 <!-- one line per resolved ticket: [title](issues/NN-slug.md) — gist -->
+
+- [Scaffold the hello25 app and its deploy path](issues/01-scaffold-and-deploy.md) — live; push to `master` deploys via Cloudflare Git integration.
 
 ## Not yet specified
 
@@ -40,8 +44,8 @@ birthday), streamed from a desktop in true fullscreen.
   (fade, duration, overlap). Likely settled while reviewing the built player.
 - **Figure pacing** — whether walk speed follows the song's tempo, and what the Figure does on the
   Start and End screens and during Instrumental breaks.
-- **Typography** — Japanese/Latin font choice and exact sizes; likely chosen in the player build,
-  then tuned by eye.
+- **Typography** — which heavy Japanese/Latin font (must be thick/bold — see Notes) and exact sizes;
+  likely chosen in the player build, then tuned by eye.
 - **Portrait/mobile tuning** — sizing of Tiers and Figure on a narrow screen.
 - **Timeline visibility** — always shown vs appearing on mouse move during playback.
 
