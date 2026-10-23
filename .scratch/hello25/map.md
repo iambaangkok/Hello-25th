@@ -25,7 +25,9 @@ birthday), streamed from a desktop in true fullscreen.
     `♪` Lines show a note symbol. Empty English stays blank.
   - Verse = blank-line block. Timeline = thin white line + white Dots at Verse and Month starts.
   - 12 Months, November → October; Month starts are hand-marked, not an even split.
-  - Figure small, centred horizontally, near the bottom; Outfit and background change per Month.
+  - Figure: sharp-rectangle abstract person, 20vh tall, 10vh up, centred; walks side-on, turns to
+    face the screen to wave. Outfit and background change per Month; gait (stand / walk / light run)
+    changes at gait keyframes, on Month markers or free.
   - Start screen "Thank you 24th..." + play icon. End screen "Hello 25th!" on October; tap replays.
   - Closing (see CONTEXT.md **Rapid change** / **Wave**): from October's start the Outfits and colours
     flick through, accelerating to fastest at the `rapid` mark, then decelerating to land on October
@@ -34,7 +36,7 @@ birthday), streamed from a desktop in true fullscreen.
   - Unlisted: not linked anywhere, `noindex`. No password.
   - No text is selectable (`user-select: none` globally). Lyrics and screen text use a big, heavy,
     thick bold font.
-- Skills: `/prototype` for the Figure ticket; `/grilling` when a decision is unclear.
+- Skills: `/grilling` when a decision is unclear.
 
 ## Decisions so far
 
@@ -42,20 +44,20 @@ birthday), streamed from a desktop in true fullscreen.
 
 - [Scaffold the hello25 app and its deploy path](issues/01-scaffold-and-deploy.md) — live; push to `master` deploys via Cloudflare Git integration.
 - [Record the Timing with a tap-along timing tool](issues/02-timing-tool.md) — `src/data/timing.json` committed (35 Lines, 12 Months, `rapid`, `wave`); re-record via `/hello25/timing.html` in dev.
+- [Prototype the Figure and its walk cycle](issues/03-figure-prototype.md) — sharp-rectangle SVG Figure in `src/Figure.tsx`; stand / walk 80 / light run 140 steps/min, eased; front-facing wave; gait + Outfit keyframes go into the timing tool.
 
 ## Not yet specified
 
 - **Transitions** — how a Month change looks (hard cut vs colour fade) and how Lines enter/leave
-  (fade, duration, overlap). Likely settled while reviewing the built player.
-- **Figure pacing** — whether walk speed follows the song's tempo, and what the Figure does on the
-  Start and End screens and during Instrumental breaks.
+  (fade, duration, overlap); whether the Figure's instant turn to wave wants a short turn. Likely
+  settled while reviewing the built player.
+- **Figure on the Start and End screens** — whether it shows, standing or waving.
 - **Typography** — which heavy Japanese/Latin font (must be thick/bold — see Notes) and exact sizes;
   likely chosen in the player build, then tuned by eye.
 - **Portrait/mobile tuning** — sizing of Tiers and Figure on a narrow screen.
 - **Timeline visibility** — always shown vs appearing on mouse move during playback.
 - **Rapid change tuning** — the flick order (cycle the Months in order? shuffle?), the slowest and
-  fastest flick rates and the easing curve, and whether colours cut or blend. The waving pose
-  itself belongs with the Figure prototype.
+  fastest flick rates and the easing curve, and whether colours cut or blend.
 
 ## Out of scope
 

@@ -14,15 +14,24 @@ A birthday music video for the song "Hello" (Furui Riho), played as a web page.
 - **Verse** — one blank-line-separated block of Lines in the lyrics files.
 - **Month** — one of 12 consecutive spans of the song, **November → October** (ending on her
   birthday month). Each Month has one flat **background colour** and one **Outfit**.
-- **Figure** — the small abstract walking person drawn from simple shapes, centred horizontally
-  near the bottom of the screen. Always short hair.
+- **Figure** — the small abstract person built only from sharp rectangles (no face features),
+  centred horizontally near the bottom of the screen. Short bob hair. Moves side-on, facing right;
+  turns to face the screen only to **Wave**.
+- **Gait** — what the Figure's legs are doing: **Stand** (still, breathing; the song starts here),
+  **Walk** (80 steps/min) or **Light run** (140 steps/min), both on the song's beat. Changing gait
+  eases over a short blend rather than snapping.
+- **Gait keyframe** — a time where the Gait changes, with its own ease time. Either tied to a Month
+  marker or free at any time.
+- **Month keyframe** — what changes at a Month marker: the background colour and the Outfit.
 - **Outfit** — what the Figure wears in a Month: inner, outer, bottom, shoes, bag, hair colour.
-  - **Inner** — strap top / t-shirt / tank top / blouse / **dress** (a dress is inner + bottom).
+  - **Inner** — strap top / t-shirt / long-sleeve / tank top / blouse / **dress** (a dress is inner +
+    bottom). One colour, or **striped**: horizontal stripes of two colours.
   - **Outer** — none / open jacket / cardigan / coat.
   - **Bottom** — pants with adjustable **length** (shorts ↔ full) and **leg width**.
   - **Shoes** — slipper / two-colour slipper / two-colour running shoes.
   - **Bag** — optional.
-- **Wardrobe** — the 12 Months' background colours + Outfits, exported from the picker as JSON.
+  - **Hair** — colour, and style **bob** (chin length) or **short bob** (a little shorter).
+- **Wardrobe** — the 12 Month keyframes (background colours + Outfits), edited in the timing tool.
 - **Timing** — the start time of every Line and every Month, recorded by tapping along with the song
   in the **timing tool**.
 - **Rapid change** — the closing stretch: from October's start the Outfits and background colours
