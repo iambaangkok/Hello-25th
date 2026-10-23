@@ -1,0 +1,18 @@
+{
+  // hello25 is a purely static SPA (Vite build → dist/hello25/). Deployed as a Cloudflare
+  // "Worker with Static Assets" with NO Worker script — assets only — bound to the route
+  // www.iambaangkok.dev/hello25*. The route keeps the path prefix, which is why the build emits
+  // into a `hello25/` subfolder of the assets directory.
+  //
+  // `name` must match the Worker name in the Cloudflare dashboard.
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "hello25",
+  "compatibility_date": "2025-01-01",
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "www.iambaangkok.dev/hello25*", "zone_name": "iambaangkok.dev" }
+  ],
+  "assets": {
+    "directory": "./dist"
+  }
+}
