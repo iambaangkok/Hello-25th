@@ -27,6 +27,10 @@ birthday), streamed from a desktop in true fullscreen.
   - 12 Months, November → October; Month starts are hand-marked, not an even split.
   - Figure small, centred horizontally, near the bottom; Outfit and background change per Month.
   - Start screen "Thank you 24th..." + play icon. End screen "Hello 25th!" on October; tap replays.
+  - Closing (see CONTEXT.md **Rapid change** / **Wave**): from October's start the Outfits and colours
+    flick through, accelerating to fastest at the `rapid` mark, then decelerating to land on October
+    ~1 s before the `wave` mark; the Figure walks that last second, then stops and waves until the
+    audio ends.
   - Unlisted: not linked anywhere, `noindex`. No password.
   - No text is selectable (`user-select: none` globally). Lyrics and screen text use a big, heavy,
     thick bold font.
@@ -37,6 +41,7 @@ birthday), streamed from a desktop in true fullscreen.
 <!-- one line per resolved ticket: [title](issues/NN-slug.md) — gist -->
 
 - [Scaffold the hello25 app and its deploy path](issues/01-scaffold-and-deploy.md) — live; push to `master` deploys via Cloudflare Git integration.
+- [Record the Timing with a tap-along timing tool](issues/02-timing-tool.md) — `src/data/timing.json` committed (35 Lines, 12 Months, `rapid`, `wave`); re-record via `/hello25/timing.html` in dev.
 
 ## Not yet specified
 
@@ -48,6 +53,9 @@ birthday), streamed from a desktop in true fullscreen.
   likely chosen in the player build, then tuned by eye.
 - **Portrait/mobile tuning** — sizing of Tiers and Figure on a narrow screen.
 - **Timeline visibility** — always shown vs appearing on mouse move during playback.
+- **Rapid change tuning** — the flick order (cycle the Months in order? shuffle?), the slowest and
+  fastest flick rates and the easing curve, and whether colours cut or blend. The waving pose
+  itself belongs with the Figure prototype.
 
 ## Out of scope
 

@@ -9,5 +9,5 @@ Blocked by: 01
 How should the Figure look and move? Rough, reactable prototype of a small simple-shapes person
 (short hair) walking in place, wearing a sample Outfit drawn from the CONTEXT.md option set
 (inner incl. dress, outer, bottom with length/width, shoes, bag). Settle proportions, walk vs light
-run, gait speed, and the rendering approach (SVG vs Canvas) the player will reuse. Link the
+run, gait speed, a **wave** at the screen (the closing pose — see CONTEXT.md **Wave**), and the rendering approach (SVG vs Canvas) the player will reuse. Link the
 prototype as an asset.

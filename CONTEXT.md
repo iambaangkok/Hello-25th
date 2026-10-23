@@ -25,6 +25,11 @@ A birthday music video for the song "Hello" (Furui Riho), played as a web page.
 - **Wardrobe** — the 12 Months' background colours + Outfits, exported from the picker as JSON.
 - **Timing** — the start time of every Line and every Month, recorded by tapping along with the song
   in the **timing tool**.
+- **Rapid change** — the closing stretch: from October's start the Outfits and background colours
+  flick through the other Months, slowly at first, speeding up to their fastest at the **Rapid change
+  mark** (`rapid`), then slowing back down to land on October's about 1 s before the **Wave**.
+- **Wave** — the final mark (`wave`): the Figure, in October's Outfit, stops walking and waves at the
+  screen until the audio ends. The End screen follows.
 - **Timeline** — the minimal bottom bar: a thin white line for the song's duration with white
   **Dots** at each Verse start and each Month start; clicking a Dot seeks there.
 - **Start screen** — "Thank you 24th..." with a play icon below, before playback.
