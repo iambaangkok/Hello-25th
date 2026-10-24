@@ -23,14 +23,18 @@ A birthday music video for the song "Hello" (Furui Riho), played as a web page.
 - **Gait keyframe** — a time where the Gait changes, with its own ease time. Either tied to a Month
   marker or free at any time.
 - **Month keyframe** — what changes at a Month marker: the background colour and the Outfit.
-- **Outfit** — what the Figure wears in a Month: inner, outer, bottom, shoes, bag, hair colour.
-  - **Inner** — strap top / t-shirt / long-sleeve / tank top / blouse / **dress** (a dress is inner +
+- **Outfit** — what the Figure wears in a Month: inner, outer, bottom, shoes, accessories, hair.
+  - **Inner** — strap top / t-shirt / long-sleeve / turtleneck / tank top / blouse / **dress** (a dress is inner +
     bottom). One colour, or **striped**: horizontal stripes of two colours.
-  - **Outer** — none / open jacket / cardigan / coat.
+  - **Outer** — none / open jacket / cardigan / coat / vest (sleeveless) / puffer (puffy, quilted).
   - **Bottom** — pants with adjustable **length** (shorts ↔ full) and **leg width**.
   - **Shoes** — slipper / two-colour slipper / two-colour running shoes.
-  - **Bag** — optional.
-  - **Hair** — colour, and style **bob** (chin length) or **short bob** (a little shorter).
+  - **Accessories** — a bag (none / side bag / bigger side bag with a thicker strap / backpack) and
+    an optional scarf and a hat (none / **bucket** — low crown, brim sloping down all round, optional dots in their own colour / **cap** — peak in
+    front), each with its own colour.
+  - **Hair** — colour, and a style — all short, as hers is: **bob** (chin length), **short bob** (a
+    little shorter), **ponytail** (short, high, with long side bangs framing the face) or
+    **pigtails** (two short tufts low at the sides).
 - **Wardrobe** — the 12 Month keyframes (background colours + Outfits), edited in the timing tool.
 - **Timing** — the start time of every Line and every Month, recorded by tapping along with the song
   in the **timing tool**.

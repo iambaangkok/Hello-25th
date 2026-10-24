@@ -1,21 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import audioUrl from '../../assets/hello.m4a'
 import { LINES } from '../lyrics.ts'
 import { MARK_NAMES, MONTH_NAMES, indexAt, type Timing } from '../timing.ts'
+import { GAIT_EASE } from '../gait.ts'
+import { DEFAULT_WARDROBE, withDefaults, type Wardrobe } from '../wardrobe.ts'
+import { WardrobeEditor } from './WardrobeEditor.tsx'
 
 // Dev-only tap-along tool for recording the Timing. Served at /hello25/timing.html by `pnpm dev`;
 // not part of the build. Lines are tapped along with the song; Months are set one row at a time
 // (tap M, type a time, nudge, or snap to a Line start), then the Rapid change and the Wave.
+// Below them, the Wardrobe and gait keyframes are edited against the song with a live Figure.
 
 // `months` holds every mark in MARK_NAMES order: 12 Months, then Rapid change and Wave.
-type Draft = { lines: number[]; months: (number | null)[] }
+type Draft = { lines: number[]; months: (number | null)[]; wardrobe: Wardrobe }
 
 const STORAGE_KEY = 'hello25.timing-tool.draft'
 const LEGACY_TAPS_KEY = 'hello25.timing-tool.taps'
 const LATENCY_KEY = 'hello25.timing-tool.latency'
 const UNDO_LIMIT = 500
 
-const EMPTY: Draft = { lines: [], months: [0, ...Array<null>(MARK_NAMES.length - 1).fill(null)] }
+const EMPTY: Draft = {
+  lines: [],
+  months: [0, ...Array<null>(MARK_NAMES.length - 1).fill(null)],
+  wardrobe: DEFAULT_WARDROBE,
+}
+// A run of edits to the same field within this long is one undo step.
+const COALESCE_MS = 1000
 
 const round = (t: number) => Math.round(t * 1000) / 1000
 const fmt = (t: number) => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`
@@ -27,12 +37,12 @@ function parseTime(text: string): number | null {
   return round(Number(m[1] ?? 0) * 60 + Number(m[2]))
 }
 
-function fromTiming(timing: Timing): Draft {
+function fromTiming(timing: Timing, wardrobe = DEFAULT_WARDROBE): Draft {
   const months = [...EMPTY.months]
   timing.months.forEach((t, i) => (months[i] = t))
   months[MONTH_NAMES.length] = timing.rapid ?? null
   months[MONTH_NAMES.length + 1] = timing.wave ?? null
-  return { lines: [...timing.lines], months }
+  return { lines: [...timing.lines], months, wardrobe }
 }
 
 function loadDraft(): Draft {
@@ -42,7 +52,8 @@ function loadDraft(): Draft {
       const draft = JSON.parse(saved) as Draft
       // Drafts from before the Rapid change and Wave marks have only 12 slots.
       const months = [...draft.months, ...EMPTY.months.slice(draft.months.length)]
-      return { ...draft, months }
+      // Drafts from before the Wardrobe have none.
+      return { ...draft, months, wardrobe: draft.wardrobe ? withDefaults(draft.wardrobe) : DEFAULT_WARDROBE }
     }
     // Earlier version of this tool stored a flat tap log.
     const legacy = JSON.parse(localStorage.getItem(LEGACY_TAPS_KEY) ?? '[]') as { kind: string; t: number }[]
@@ -71,17 +82,23 @@ export default function TimingTool() {
   const [rate, setRate] = useState(1)
   const [latencyMs, setLatencyMs] = useState(() => Number(localStorage.getItem(LATENCY_KEY) ?? 0))
   const [status, setStatus] = useState('')
+  const [duration, setDuration] = useState(0)
+  const lastChange = useRef({ key: '', at: 0 })
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)), [draft])
   useEffect(() => localStorage.setItem(LATENCY_KEY, String(latencyMs)), [latencyMs])
 
   // Every change goes through here so Z can undo it, whether it touched Lines or Months.
   // Kept outside a state updater so StrictMode's double-invoke can't record a change twice.
-  const change = useCallback((update: (prev: Draft) => Draft) => {
+  // Edits sharing a `coalesce` key in quick succession (dragging a colour) undo as one.
+  const change = useCallback((update: (prev: Draft) => Draft, coalesce = '') => {
     const prev = latest.current
     const next = update(prev)
     if (next === prev) return
-    history.current = [...history.current.slice(-UNDO_LIMIT), prev]
+    const at = Date.now()
+    const merge = coalesce !== '' && lastChange.current.key === coalesce && at - lastChange.current.at < COALESCE_MS
+    lastChange.current = { key: coalesce, at }
+    if (!merge) history.current = [...history.current.slice(-UNDO_LIMIT), prev]
     latest.current = next
     setDraftState(next)
   }, [])
@@ -151,11 +168,27 @@ export default function TimingTool() {
 
   const seek = useCallback((delta: number) => seekTo((audio.current?.currentTime ?? 0) + delta), [seekTo])
 
+  const changeWardrobe = useCallback(
+    (update: (prev: Wardrobe) => Wardrobe, coalesce?: string) =>
+      change((prev) => ({ ...prev, wardrobe: update(prev.wardrobe) }), coalesce),
+    [change],
+  )
+
+  // G: a free walk keyframe at the playhead.
+  const addGait = useCallback(
+    () =>
+      changeWardrobe((prev) => ({
+        ...prev,
+        gaits: [...prev.gaits, { month: null, t: round(playhead()), gait: 'walk', ease: GAIT_EASE }],
+      })),
+    [changeWardrobe, playhead],
+  )
+
   const restart = () => {
-    if (!confirm('Clear all Lines and Months and restart? (Z can undo)')) return
+    if (!confirm('Clear all Lines and Months and restart? The Wardrobe is kept. (Z can undo)')) return
     seekTo(0)
     audio.current?.pause()
-    change(() => EMPTY)
+    change((prev) => ({ ...EMPTY, wardrobe: prev.wardrobe }))
     setSelected(1)
   }
 
@@ -165,6 +198,7 @@ export default function TimingTool() {
       const actions: Record<string, () => void> = {
         Space: tapLine,
         KeyM: tapMonth,
+        KeyG: addGait,
         Backspace: undo,
         KeyZ: undo,
         KeyP: togglePlay,
@@ -184,7 +218,7 @@ export default function TimingTool() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tapLine, tapMonth, undo, togglePlay, seek])
+  }, [tapLine, tapMonth, addGait, undo, togglePlay, seek])
 
   useEffect(() => {
     if (audio.current) audio.current.playbackRate = rate
@@ -194,36 +228,61 @@ export default function TimingTool() {
   const ordered = draft.months.every((_, i) => !outOfOrder(draft.months, i))
   const complete = draft.lines.length === LINES.length && setMonthsCount === MARK_NAMES.length && ordered
   const [rapid, wave] = draft.months.slice(MONTH_NAMES.length)
-  const timing: Timing = {
-    lines: draft.lines,
-    months: draft.months.slice(0, MONTH_NAMES.length).filter((t): t is number => t !== null),
-    ...(rapid !== null && { rapid }),
-    ...(wave !== null && { wave }),
-  }
+  // Memoised so the Wardrobe preview's gait track is only rebuilt when the marks change.
+  const timing: Timing = useMemo(
+    () => ({
+      lines: draft.lines,
+      months: draft.months.slice(0, MONTH_NAMES.length).filter((t): t is number => t !== null),
+      ...(rapid !== null && { rapid }),
+      ...(wave !== null && { wave }),
+    }),
+    [draft.lines, draft.months, rapid, wave],
+  )
   const json = JSON.stringify(timing, null, 2) + '\n'
+  const wardrobeJson = JSON.stringify(draft.wardrobe, null, 2) + '\n'
   const current = indexAt(draft.lines, now)
   const month = indexAt(draft.months, now)
   const next = draft.lines.length
 
   const save = async () => {
     if (!complete && !confirm('Timing is incomplete or Months are out of order. Save anyway?')) return
-    const res = await fetch(`${import.meta.env.BASE_URL}__timing`, { method: 'POST', body: json })
-    setStatus(res.ok ? `Saved to src/data/timing.json at ${new Date().toLocaleTimeString()}` : `Save failed: ${res.status}`)
+    const post = (name: string, body: string) =>
+      fetch(`${import.meta.env.BASE_URL}__data/${name}`, { method: 'POST', body })
+    const [a, b] = await Promise.all([post('timing', json), post('wardrobe', wardrobeJson)])
+    setStatus(
+      a.ok && b.ok
+        ? `Saved src/data/timing.json + wardrobe.json at ${new Date().toLocaleTimeString()}`
+        : `Save failed: ${a.status} / ${b.status}`,
+    )
   }
 
   const loadFromRepo = async () => {
-    const res = await fetch(`${import.meta.env.BASE_URL}__timing`)
-    if (!res.ok) return setStatus('No src/data/timing.json yet')
-    const loaded = fromTiming((await res.json()) as Timing)
+    const get = (name: string) => fetch(`${import.meta.env.BASE_URL}__data/${name}`)
+    const [a, b] = await Promise.all([get('timing'), get('wardrobe')])
+    if (!a.ok) return setStatus('No src/data/timing.json yet')
+    const wardrobe = b.ok ? withDefaults((await b.json()) as Wardrobe) : latest.current.wardrobe
+    const loaded = fromTiming((await a.json()) as Timing, wardrobe)
     change(() => loaded)
-    setStatus('Loaded src/data/timing.json (Z to undo)')
+    setStatus(`Loaded src/data/timing.json${b.ok ? ' + wardrobe.json' : ''} (Z to undo)`)
   }
 
-  const download = () => {
+  const download = (name: string, body: string) => {
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
-    a.download = 'timing.json'
+    a.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
+    a.download = name
     a.click()
+  }
+
+  // Either file: a Wardrobe has `gaits`, a Timing has `lines`.
+  const importJson = async (file: File) => {
+    try {
+      const data = JSON.parse(await file.text()) as Timing | Wardrobe
+      if ('gaits' in data) change((prev) => ({ ...prev, wardrobe: withDefaults(data) }))
+      else change((prev) => fromTiming(data, prev.wardrobe))
+      setStatus(`Imported ${file.name} (Z to undo)`)
+    } catch (err) {
+      setStatus(`Import failed: ${String(err)}`)
+    }
   }
 
   return (
@@ -236,6 +295,7 @@ export default function TimingTool() {
           controls
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         />
         <span className="tabular-nums">
           {fmt(now)} · {rate}× · {playing ? 'playing' : 'paused'}
@@ -255,7 +315,7 @@ export default function TimingTool() {
       <p className="text-sm text-neutral-400">
         <b>Space</b> next Line starts · <b>M</b> selected Month starts now (then selects the next) ·{' '}
         <b>↑ ↓</b> select Month · <b>Z / Backspace</b> undo any change · <b>P / Enter</b> play/pause ·{' '}
-        <b>← →</b> seek 5 s · <b>S</b> speed 1 / 0.75 / 0.5 · a Line tap replaces later Line taps, so
+        <b>G</b> gait keyframe at the playhead · <b>← →</b> seek 5 s · <b>S</b> speed 1 / 0.75 / 0.5 · a Line tap replaces later Line taps, so
         seek back and re-tap to fix a section.
       </p>
 
@@ -286,14 +346,42 @@ export default function TimingTool() {
         <button onClick={loadFromRepo} className="rounded bg-neutral-700 px-3 py-1">
           Load from repo
         </button>
-        <button onClick={download} className="rounded bg-neutral-700 px-3 py-1">
-          Download JSON
+        <button onClick={() => download('timing.json', json)} className="rounded bg-neutral-700 px-3 py-1">
+          Download timing
         </button>
+        <button onClick={() => download('wardrobe.json', wardrobeJson)} className="rounded bg-neutral-700 px-3 py-1">
+          Download wardrobe
+        </button>
+        <label className="cursor-pointer rounded bg-neutral-700 px-3 py-1">
+          Import JSON
+          <input
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void importJson(file)
+              e.target.value = ''
+            }}
+          />
+        </label>
         <button onClick={restart} className="rounded bg-red-800 px-3 py-1">
           Restart
         </button>
         <span className="text-sm text-neutral-400">{status}</span>
       </section>
+
+      <WardrobeEditor
+        wardrobe={draft.wardrobe}
+        timing={timing}
+        now={now}
+        playing={playing}
+        duration={duration}
+        playhead={playhead}
+        onChange={changeWardrobe}
+        onAddGait={addGait}
+        onPlay={(t) => seekTo(t, true)}
+      />
 
       <section className="grid items-start gap-6 lg:grid-cols-2">
         <div>

@@ -8,15 +8,24 @@ import { defineConfig, type Plugin } from 'vite'
 // dist/hello25/ and wrangler serves the whole of dist/.
 const BASE = '/hello25/'
 
-// Dev-only: lets the timing tool (timing.html) write its result straight into the repo.
-function saveTiming(): Plugin {
+// Dev-only: lets the timing tool (timing.html) read and write src/data/<name>.json in the repo.
+const DATA_FILES = ['timing', 'wardrobe']
+
+function saveData(): Plugin {
   return {
-    name: 'hello25-save-timing',
+    name: 'hello25-save-data',
     apply: 'serve',
     configureServer(server) {
-      server.middlewares.use(`${BASE}__timing`, (req, res) => {
+      server.middlewares.use(`${BASE}__data`, (req, res) => {
+        const name = req.url?.replace(/^\//, '').replace(/\?.*$/, '') ?? ''
+        if (!DATA_FILES.includes(name)) {
+          res.statusCode = 404
+          res.end()
+          return
+        }
+        const file = `src/data/${name}.json`
         if (req.method === 'GET') {
-          readFile('src/data/timing.json', 'utf8').then(
+          readFile(file, 'utf8').then(
             (body) => res.end(body),
             () => {
               res.statusCode = 404
@@ -36,7 +45,7 @@ function saveTiming(): Plugin {
           try {
             JSON.parse(body)
             await mkdir('src/data', { recursive: true })
-            await writeFile('src/data/timing.json', body)
+            await writeFile(file, body)
             res.end('ok')
           } catch (err) {
             res.statusCode = 400
@@ -50,7 +59,7 @@ function saveTiming(): Plugin {
 
 export default defineConfig({
   base: BASE,
-  plugins: [tailwindcss(), react(), saveTiming()],
+  plugins: [tailwindcss(), react(), saveData()],
   build: {
     outDir: 'dist/hello25',
     emptyOutDir: true,

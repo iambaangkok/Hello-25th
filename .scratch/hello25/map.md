@@ -45,6 +45,7 @@ birthday), streamed from a desktop in true fullscreen.
 - [Scaffold the hello25 app and its deploy path](issues/01-scaffold-and-deploy.md) — live; push to `master` deploys via Cloudflare Git integration.
 - [Record the Timing with a tap-along timing tool](issues/02-timing-tool.md) — `src/data/timing.json` committed (35 Lines, 12 Months, `rapid`, `wave`); re-record via `/hello25/timing.html` in dev.
 - [Prototype the Figure and its walk cycle](issues/03-figure-prototype.md) — sharp-rectangle SVG Figure in `src/Figure.tsx`; stand / walk 80 / light run 140 steps/min, eased; front-facing wave; gait + Outfit keyframes go into the timing tool.
+- [Edit the Month keyframes and gait keyframes in the timing tool](issues/04-wardrobe-picker.md) — `src/data/wardrobe.json` committed (12 Months + gait keyframes, version 2); the Figure gained ponytail / pigtails, turtleneck, vest, puffer, scarf, bag types, bucket hat / cap; `gaitTrack` in `src/wardrobe.ts` drives the player.
 
 ## Not yet specified
 
