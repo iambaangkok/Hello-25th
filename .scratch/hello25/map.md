@@ -47,19 +47,12 @@ birthday), streamed from a desktop in true fullscreen.
 - [Prototype the Figure and its walk cycle](issues/03-figure-prototype.md) — sharp-rectangle SVG Figure in `src/Figure.tsx`; stand / walk 80 / light run 140 steps/min, eased; front-facing wave; gait + Outfit keyframes go into the timing tool.
 - [Edit the Month keyframes and gait keyframes in the timing tool](issues/04-wardrobe-picker.md) — `src/data/wardrobe.json` committed (12 Months + gait keyframes, version 2); the Figure gained ponytail / pigtails, turtleneck, vest, puffer, scarf, bag types, bucket hat / cap; `gaitTrack` in `src/wardrobe.ts` drives the player.
 - [Pose the ending's crowd](issues/07-ending-crowd.md) — 11 posed copies in `src/data/crowd.json`, fading in with "Hello 25th!" at the `hello` mark; edited in `/hello25/crowd.html` (Figure takes an explicit `pose`).
+- [Build the player](issues/05-player.md) — live MV: blank start + intro, Lines in a right-of-centre corridor, glass painting backgrounds, beat-locked Rapid change, run → turn → Wave, "Hello 25th!" with the crowd, seekable Timeline, fullscreen button; settled the transitions, typography (Noto Sans + Noto Sans JP), Timeline visibility and Rapid change tuning.
+- [Integrate the real Timing, Wardrobe and Figure, and ship](issues/06-integrate-and-ship.md) — shipped and signed off after a live watch-through.
 
 ## Not yet specified
 
-- **Transitions** — how a Month change looks (hard cut vs colour fade) and how Lines enter/leave
-  (fade, duration, overlap); whether the Figure's instant turn to wave wants a short turn. Likely
-  settled while reviewing the built player.
-- **Figure on the Start and End screens** — whether it shows, standing or waving.
-- **Typography** — which heavy Japanese/Latin font (must be thick/bold — see Notes) and exact sizes;
-  likely chosen in the player build, then tuned by eye.
-- **Portrait/mobile tuning** — sizing of Tiers and Figure on a narrow screen.
-- **Timeline visibility** — always shown vs appearing on mouse move during playback.
-- **Rapid change tuning** — the flick order (cycle the Months in order? shuffle?), the slowest and
-  fastest flick rates and the easing curve, and whether colours cut or blend.
+Nothing — the destination is reached.
 
 ## Out of scope
 

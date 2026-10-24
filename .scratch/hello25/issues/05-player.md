@@ -1,7 +1,7 @@
 # Build the player
 
 Type: task
-Status: open
+Status: closed
 Assignee: iambaangkok
 Blocked by: 01
 
@@ -14,9 +14,11 @@ Month Dots that seek; the closing Rapid change and Wave (CONTEXT.md) driven by t
 marks; End screen with tap-to-replay; no scrollbars/borders; `noindex`. Pick a heavy,
 thick bold font for all text (e.g. Noto Sans JP at 800–900; no text selectable) and propose transitions; the human reviews on the deployed URL.
 
-## Progress
+## Resolution
 
-Built, awaiting the human's review: `src/Player.tsx` (page) + `src/mv.ts` (pure: Line / Month at a
+**Signed off** by the human after a full watch-through on the live site (24 Oct 2026).
+
+Built: `src/Player.tsx` (page) + `src/mv.ts` (pure: Line / Month at a
 time, Rapid change, Timeline Dots), reading `src/data/timing.json` + `wardrobe.json`. Checked in
 headless Chromium at 1600×900 and 390×844 (start, Lines, Months, run, Rapid change, Wave, End).
 
