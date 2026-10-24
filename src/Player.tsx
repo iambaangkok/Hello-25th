@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import audioUrl from '../assets/hello.m4a'
 import { FIGURE_BOTTOM_VH, FIGURE_HEIGHT_VH, Figure } from './Figure.tsx'
 import { FONTS, fontStack } from './fonts.ts'
@@ -34,6 +35,11 @@ const FONT_TEXT = [...new Set(['Thank you 24th... Hello 25th!', ...LINES.flatMap
 const DURATION_FALLBACK = 227.6
 // During playback the Timeline and cursor hide this long after the pointer last moved.
 const IDLE_MS = 2500
+// The intro's length: `animate-intro` in index.css.
+const INTRO_S = 4.4
+// In dev, `?export` hands the clock to scripts/export-video.mjs: no audio, no controls, and each
+// frame drawn on request through `window.hello25Export` (see useExport).
+const EXPORTING = import.meta.env.DEV && new URLSearchParams(location.search).has('export')
 
 type Stage = 'blank' | 'intro' | 'playing' | 'paused' | 'end'
 
@@ -66,7 +72,10 @@ export default function Player() {
     document.head.append(link)
   }, [])
 
+  useExport(setStage, setNow, duration)
+
   useEffect(() => {
+    if (EXPORTING) return
     let frame = 0
     const tick = () => {
       if (audio.current) setNow(audio.current.currentTime)
@@ -172,7 +181,7 @@ export default function Player() {
 
       {stage === 'intro' && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="animate-intro text-[clamp(18px,2.6vmin,34px)]" onAnimationEnd={play}>
+          <p className="animate-intro text-[clamp(18px,2.6vmin,34px)]" onAnimationEnd={EXPORTING ? undefined : play}>
             Thank you 24th...
           </p>
         </div>
@@ -225,12 +234,50 @@ export default function Player() {
 
           {hello && <CrowdLayer members={CROWD.filter((m) => m.y < FIGURE_BOTTOM_VH)} />}
 
-          <Timeline now={now} duration={duration} dots={dots} visible={stage === 'paused' || active} onSeek={seek} />
+          {!EXPORTING && <Timeline now={now} duration={duration} dots={dots} visible={stage === 'paused' || active} onSeek={seek} />}
         </div>
       )}
-      <FullscreenButton visible={stage === 'blank' || stage === 'paused' || active} />
+      {!EXPORTING && <FullscreenButton visible={stage === 'blank' || stage === 'paused' || active} />}
     </main>
   )
+}
+
+// Export mode: the video's clock is `t` seconds from the tap — the intro, then the song from
+// INTRO_S, then the End screen. `frame(t)` draws that moment and resolves once it's ready to
+// capture. CSS animations (a Line fading up, the scene fading in) run on the page's own clock, so
+// they're held paused and stepped by the same `t`: frames must be requested in order, and an
+// animation that starts at a frame is at its beginning there.
+type ExportHook = { duration: number; intro: number; frame: (t: number) => Promise<void> }
+declare global {
+  interface Window {
+    hello25Export?: ExportHook
+  }
+}
+
+function useExport(setStage: (s: Stage) => void, setNow: (t: number) => void, duration: number) {
+  useEffect(() => {
+    if (!EXPORTING) return
+    const started = new Map<Animation, number>()
+    window.hello25Export = {
+      duration,
+      intro: INTRO_S,
+      async frame(t) {
+        const song = t - INTRO_S
+        flushSync(() => {
+          setStage(t < 0 ? 'blank' : song < 0 ? 'intro' : song < duration ? 'playing' : 'end')
+          setNow(Math.min(Math.max(song, 0), duration))
+        })
+        for (const a of document.getAnimations()) {
+          if (!started.has(a)) started.set(a, t)
+          a.pause()
+          a.currentTime = (t - (started.get(a) ?? t)) * 1000
+        }
+        await Promise.all([...document.images].map((img) => img.decode().catch(() => {})))
+        await document.fonts.ready
+      },
+    }
+    return () => void delete window.hello25Export
+  }, [setStage, setNow, duration])
 }
 
 // Bottom right, past the Timeline's end: enters / leaves fullscreen. Shown on the blank page, then

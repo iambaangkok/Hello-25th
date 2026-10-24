@@ -52,9 +52,9 @@ birthday), streamed from a desktop in true fullscreen.
 
 ## Not yet specified
 
-Nothing — the destination is reached.
+Nothing — the destination is reached. Follow-up after it: video export (`pnpm export`, desktop 1080p and
+9:16 reel) is built but looks soft — [Make the exported video as crisp as the web version](issues/08-export-crispness.md).
 
 ## Out of scope
 
-- **Video export** of the MV — wanted later; for now a screen recording does the job. A future effort.
 - **Access control** (password / Cloudflare Access) — ruled out: unlisted is enough, friction for her.
