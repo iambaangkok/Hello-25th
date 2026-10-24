@@ -104,6 +104,20 @@ export const POSES: Record<string, Pose> = {
   'hands on hips': { view: 'front', lean: 0, arms: [[35, -110], [35, -110]], legs: [[6, 0], [6, 0]] },
 }
 
+// Facing the screen with both arms down — where the wave starts from after she turns.
+const WAVE_REST: Pose = { view: 'front', lean: 0, arms: [[6, 4], [-4.6, 2.3]], legs: [[0, 0], [0, 0]] }
+
+const mixLimb = (a: Limb, b: Limb, k: number): Limb => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
+const mixPose = (a: Pose, b: Pose, k: number): Pose => ({
+  view: b.view,
+  lean: a.lean + (b.lean - a.lean) * k,
+  arms: [mixLimb(a.arms[0], b.arms[0], k), mixLimb(a.arms[1], b.arms[1], k)],
+  legs: [mixLimb(a.legs[0], b.legs[0], k), mixLimb(a.legs[1], b.legs[1], k)],
+})
+
+// Raising the arm into the wave: `k` 0 arms down … 1 waving.
+export const raiseToWave = (time: number, k: number): Pose => mixPose(WAVE_REST, wavePose(time), k)
+
 // The main Figure's wave: the left arm raised, its forearm rocking from the elbow; a slight sway.
 export function wavePose(time: number): Pose {
   return {

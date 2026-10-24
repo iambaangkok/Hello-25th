@@ -8,7 +8,8 @@ import { HelloTwentyFifth } from './Hello.tsx'
 import { backToFront, type Crowd, type CrowdMember } from './crowd.ts'
 import crowdJson from './data/crowd.json'
 import { LINES } from './lyrics.ts'
-import { momentAt, rapidChange, timelineDots } from './mv.ts'
+import { raiseToWave } from './pose.ts'
+import { WAVING, momentAt, rapidChange, timelineDots } from './mv.ts'
 import { MONTH_NAMES, type Timing } from './timing.ts'
 import { gaitTrack, withDefaults, type Wardrobe } from './wardrobe.ts'
 import timingJson from './data/timing.json'
@@ -141,6 +142,8 @@ export default function Player() {
   const background = before ? COLOURS[0] : stage === 'end' ? COLOURS[11] : moment.background
   const fadeFrom = before || stage === 'end' ? null : moment.fadeFrom
   const { gait, phase } = track(now)
+  // Running into the Wave (see mv.ts); the End screen keeps her waving.
+  const wave = stage === 'end' ? WAVING : moment.wave
   const hello = stage === 'end' || ((stage === 'playing' || stage === 'paused') && moment.hello)
   const line = (stage === 'playing' || stage === 'paused') && !hello ? LINES[moment.line] : undefined
 
@@ -203,15 +206,20 @@ export default function Player() {
 
           <div
             className="absolute left-1/2 -translate-x-1/2"
-            style={{ height: `${FIGURE_HEIGHT_VH}vh`, bottom: `${FIGURE_BOTTOM_VH}vh`, aspectRatio: '100 / 160' }}
+            style={{
+              height: `${FIGURE_HEIGHT_VH}vh`,
+              bottom: `${FIGURE_BOTTOM_VH}vh`,
+              aspectRatio: '100 / 160',
+              transform: `scaleX(${wave.squash})`,
+            }}
           >
             <Figure
               outfit={WARDROBE.months[month].outfit}
               phase={phase}
-              // The End screen keeps her waving in October.
-              gait={stage === 'end' ? 0 : gait}
-              waving={stage === 'end' || moment.waving}
+              gait={gait * (1 - wave.settle)}
+              waving={false}
               time={now}
+              pose={wave.front ? raiseToWave(now, wave.raise) : undefined}
             />
           </div>
 

@@ -78,3 +78,6 @@ Proposals for the fog, to settle on review:
   (`.gitignore`) — the script falls back to the reduced copies.
 - **Head** — title "Hello"; favicon (32, 192) and apple-touch-icon in `public/`: "25" as on the
   End screen (white 2, red 5, hard shadow), transparent, trimmed to fill the square (human's call).
+- **Run → Wave** (human's call) — timed from `wave`: eases to a stop (−0.8 → −0.2 s), turns to face
+  the screen by narrowing to a sliver and widening (−0.2 → +0.1 s), then raises the arm from her
+  side into the wave (+0.1 → +0.6 s). `waveTransition` in mv.ts, `raiseToWave` in pose.ts.

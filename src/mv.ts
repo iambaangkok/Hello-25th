@@ -54,13 +54,42 @@ export function rapidChange(timing: Timing) {
   }
 }
 
+// Running into the Wave, timed from the `wave` mark: she slows to a stop, turns to face the screen
+// (narrowing to a sliver and widening again), then raises her arm into the wave.
+const SETTLE = [-0.8, -0.2] // light run → standing
+const TURN = [-0.2, 0.1] // side → facing the screen
+const RAISE = [0.1, 0.6] // arms down → waving
+
+export type WaveTransition = {
+  settle: number // 0 moving as keyed … 1 standing still
+  squash: number // horizontal scale during the turn (1 outside it)
+  front: boolean // facing the screen
+  raise: number // 0 arms down … 1 waving
+}
+
+export const WAVING: WaveTransition = { settle: 1, squash: 1, front: true, raise: 1 }
+
+const span = (t: number, [from, to]: number[]) => Math.min(1, Math.max(0, (t - from) / (to - from)))
+
+export function waveTransition(timing: Timing, t: number): WaveTransition {
+  if (timing.wave === undefined) return { settle: 0, squash: 1, front: false, raise: 0 }
+  const since = t - timing.wave
+  const turn = span(since, TURN)
+  return {
+    settle: smooth(span(since, SETTLE)),
+    squash: Math.max(0.06, Math.abs(Math.cos(turn * Math.PI))),
+    front: turn >= 0.5,
+    raise: smooth(span(since, RAISE)),
+  }
+}
+
 export type Moment = {
   line: number // index into LINES, -1 before the first
   month: number // whose Outfit to show
   background: string
   fadeFrom: number | null // the Month fading out underneath, while `fade` < 1
   fade: number // 0 → 1 over the fade-in from the previous Month
-  waving: boolean
+  wave: WaveTransition
   hello: boolean // "Hello 25th!" shows (and the Lines give way to it)
 }
 
@@ -76,7 +105,7 @@ export function momentAt(timing: Timing, rapid: ReturnType<typeof rapidChange>, 
     background: fading ? mixOklab(colours[month - 1], colours[month], smooth(since / FADE)) : colours[month],
     fadeFrom: fading ? month - 1 : null,
     fade: fading ? smooth(since / FADE) : 1,
-    waving: timing.wave !== undefined && t >= timing.wave,
+    wave: waveTransition(timing, t),
     hello: timing.hello !== undefined && t >= timing.hello,
   }
 }
