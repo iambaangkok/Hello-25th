@@ -3,6 +3,7 @@
 // cut). Drawn in a 100×160 viewBox and sized by its container's height.
 import { useId } from 'react'
 import type { Outfit } from './outfit.ts'
+import { armPoints, legPoints, shinAngle, wavePose, type Pose, type Pt } from './pose.ts'
 
 // Where the player puts it: centred horizontally, this tall and this far above the bottom edge.
 export const FIGURE_HEIGHT_VH = 20
@@ -14,24 +15,14 @@ export type FigureProps = {
   gait: number // 0 stand, 1 walk, 2 light run; fractional while easing (see gait.ts)
   waving: boolean
   time: number // seconds, drives the idle breathing and the wave
+  pose?: Pose // held still in this pose instead (the ending's crowd); gait and waving are ignored
 }
 
 export function Figure(props: FigureProps) {
-  return props.waving ? <Front {...props} /> : <Side {...props} />
+  const { pose } = props
+  if (pose) return pose.view === 'front' ? <Front {...props} pose={pose} /> : <Side {...props} pose={pose} />
+  return props.waving ? <Front {...props} pose={wavePose(props.time)} /> : <Side {...props} />
 }
-
-type Pt = [number, number]
-
-const THIGH = 28
-const SHIN = 28
-const UPPER = 21
-const FORE = 19
-
-// Angles are radians from straight down; positive swings forward (+x).
-const limb = (from: Pt, len: number, angle: number): Pt => [
-  from[0] + len * Math.sin(angle),
-  from[1] + len * Math.cos(angle),
-]
 
 // The first `frac` (0–1) of a two-segment limb a→b→c, by length.
 function partOf(a: Pt, b: Pt, c: Pt, frac: number): Pt[] {
@@ -259,31 +250,41 @@ function Hat({ o, front }: { o: Outfit; front: boolean }) {
   return null
 }
 
-function Side({ outfit: o, phase, gait, time }: FigureProps) {
-  const HIP: Pt = [50, 92]
-  const SHOULDER: Pt = [50, 46]
-  // Stand → walk scales the stride up from nothing; walk → run blends walk values into run values.
+const DEG = 180 / Math.PI
+
+// The walk cycle as a side Pose at `phase`: stand → walk scales the stride up from nothing;
+// walk → run blends walk values into run values.
+function walkPose(phase: number, gait: number): Pose {
   const walkAmt = Math.min(1, Math.max(0, gait))
   const runAmt = Math.min(1, Math.max(0, gait - 1))
   const mix = (walk: number, run: number) => walk + (run - walk) * runAmt
   const swing = mix(0.45, 0.75) * walkAmt
   const kneeMax = mix(0.7, 1.5) * walkAmt
-  // Standing still: a slow breathing bob instead of the step bob.
-  const bob = -mix(1.5, 4) * walkAmt * Math.abs(Math.sin(phase)) + (1 - walkAmt) * 0.6 * Math.sin(time * 2.4)
-  const lean = mix(0.03, 0.12) * walkAmt
+  const leg = (p: number): [number, number] => [swing * Math.sin(p) * DEG, kneeMax * Math.max(0, Math.cos(p)) * DEG]
+  const arm = (p: number): [number, number] => [
+    -swing * 0.9 * Math.sin(p) * DEG,
+    mix(0.15 + (0.1 + 0.2 * Math.max(0, -Math.sin(p))) * walkAmt, 1.4) * DEG,
+  ]
+  return {
+    view: 'side',
+    lean: mix(0.03, 0.12) * walkAmt * DEG,
+    arms: [arm(phase), arm(phase + Math.PI)],
+    legs: [leg(phase), leg(phase + Math.PI)],
+  }
+}
 
-  const leg = (p: number) => {
-    const thigh = swing * Math.sin(p)
-    const knee = kneeMax * Math.max(0, Math.cos(p))
-    const k = limb(HIP, THIGH, thigh)
-    return { k, f: limb(k, SHIN, thigh - knee), footAngle: (thigh - knee) * 0.4 }
+function Side({ outfit: o, phase, gait, time, pose: held }: FigureProps) {
+  const walkAmt = held ? 0 : Math.min(1, Math.max(0, gait))
+  const runAmt = Math.min(1, Math.max(0, gait - 1))
+  const pose = held ?? walkPose(phase, gait)
+  // Standing still: a slow breathing bob instead of the step bob; a held pose doesn't move.
+  const bob = held ? 0 : -(1.5 + 2.5 * runAmt) * walkAmt * Math.abs(Math.sin(phase)) + (1 - walkAmt) * 0.6 * Math.sin(time * 2.4)
+  const lean = pose.lean / DEG
+  const leg = (i: number) => {
+    const [hip, k, f] = legPoints(pose, i)
+    return { hip, k, f, footAngle: shinAngle(pose, i) * 0.4 }
   }
-  const arm = (p: number): Pt[] => {
-    const upper = -swing * 0.9 * Math.sin(p)
-    const elbow = mix(0.15 + (0.1 + 0.2 * Math.max(0, -Math.sin(p))) * walkAmt, 1.4)
-    const e = limb(SHOULDER, UPPER, upper)
-    return [SHOULDER, e, limb(e, FORE, upper + elbow)]
-  }
+  const arm = (i: number) => armPoints(pose, i)
 
   const dress = o.inner === 'dress'
   const { defs, fill: innerFill } = useInnerFill(o)
@@ -293,10 +294,10 @@ function Side({ outfit: o, phase, gait, time }: FigureProps) {
 
   const drawLeg = (l: ReturnType<typeof leg>) => (
     <g>
-      <Segs points={[HIP, l.k, l.f]} width={7} color={o.skin} />
+      <Segs points={[l.hip, l.k, l.f]} width={7} color={o.skin} />
       {/* length 0 leaves only the band at the hip: bikini-short */}
       {!dress && o.length > 0.02 && (
-        <Segs points={partOf(HIP, l.k, l.f, o.length)} width={9 + o.width * 9} color={o.bottomColor} />
+        <Segs points={partOf(l.hip, l.k, l.f, o.length)} width={9 + o.width * 9} color={o.bottomColor} />
       )}
       <g transform={`translate(${l.f[0]} ${l.f[1] + 3}) rotate(${(-l.footAngle * 180) / Math.PI})`}>
         <Shoe x={-5} y={0} o={o} w={15} />
@@ -307,10 +308,10 @@ function Side({ outfit: o, phase, gait, time }: FigureProps) {
   return (
     <svg viewBox="0 0 100 160" className="h-full w-auto overflow-visible" shapeRendering="geometricPrecision">
       {defs}
-      <g transform={`translate(0 ${bob}) rotate(${(lean * 180) / Math.PI} 50 92)`}>
-        <Arm points={arm(phase + Math.PI)} o={o} innerFill={innerFill} />
-        {drawLeg(leg(phase + Math.PI))}
-        {drawLeg(leg(phase))}
+      <g transform={`translate(0 ${bob}) rotate(${pose.lean} 50 92)`}>
+        <Arm points={arm(1)} o={o} innerFill={innerFill} />
+        {drawLeg(leg(1))}
+        {drawLeg(leg(0))}
         {/* torso */}
         <rect x={40} y={40} width={20} height={10} fill={o.skin} />
         <rect x={39} y={torsoTop} width={22} height={94 - torsoTop} fill={innerFill} />
@@ -351,7 +352,7 @@ function Side({ outfit: o, phase, gait, time }: FigureProps) {
             <rect x={43} y={41} width={4} height={30} fill={o.bagColor} />
           </>
         )}
-        <Arm points={arm(phase)} o={o} innerFill={innerFill} />
+        <Arm points={arm(0)} o={o} innerFill={innerFill} />
         {/* head: neck, what's on it, face, then the hair */}
         <rect x={46} y={32} width={8} height={10} fill={o.skin} />
         <Neckwear o={o} x={44} width={12} innerFill={innerFill} tailX={53} />
@@ -364,37 +365,35 @@ function Side({ outfit: o, phase, gait, time }: FigureProps) {
   )
 }
 
-function Front({ outfit: o, time }: FigureProps) {
+// Facing the screen. The viewer's-right arm is drawn behind the torso, the left one in front (it
+// is the one that waves).
+function Front({ outfit: o, pose }: FigureProps & { pose: Pose }) {
   const dress = o.inner === 'dress'
   const { defs, fill: innerFill } = useInnerFill(o)
   const torsoTop = torsoTopOf(o)
   const coatEnd = coatEndOf(o)
   const skirtEnd = skirtEndOf(o)
-  const sway = Math.sin(time * 4.5) * 0.8
-
-  // Waving arm (viewer's left): upper arm raised out to the side, forearm rocking from the elbow.
-  const shoulderL: Pt = [37, 46]
-  const elbowL = limb(shoulderL, UPPER, -Math.PI * 0.72)
-  const wave: Pt[] = [shoulderL, elbowL, limb(elbowL, FORE, Math.PI + 0.45 * Math.sin(time * 9))]
-  const shoulderR: Pt = [63, 46]
-  const elbowR = limb(shoulderR, UPPER, -0.08)
-  const hang: Pt[] = [shoulderR, elbowR, limb(elbowR, FORE, -0.04)]
 
   const pantW = 9 + o.width * 6
-  const pantLen = 6 + o.length * 52
+  // Pants run from just above the hip (y 88) down the 56-long leg; the square end of the segment
+  // already reaches half the pant width further.
+  const pantFrac = (4 + o.length * 52 - pantW / 2) / 56
 
   return (
     <svg viewBox="0 0 100 160" className="h-full w-auto overflow-visible" shapeRendering="geometricPrecision">
       {defs}
-      <g transform={`rotate(${sway} 50 150)`}>
-        {[44, 56].map((cx) => (
-          <g key={cx}>
-            <rect x={cx - 3.5} y={90} width={7} height={57} fill={o.skin} />
-            {!dress && <rect x={cx - pantW / 2} y={88} width={pantW} height={pantLen} fill={o.bottomColor} />}
-            <Shoe x={cx - 5} y={148} o={o} w={10} />
-          </g>
-        ))}
-        <Arm points={hang} o={o} innerFill={innerFill} />
+      <g transform={`rotate(${pose.lean} 50 150)`}>
+        {[0, 1].map((i) => {
+          const [hip, knee, foot] = legPoints(pose, i)
+          return (
+            <g key={i}>
+              <Segs points={[hip, knee, foot]} width={7} color={o.skin} />
+              {!dress && pantFrac > 0 && <Segs points={partOf(hip, knee, foot, pantFrac)} width={pantW} color={o.bottomColor} />}
+              <Shoe x={foot[0] - 5} y={foot[1] + 2} o={o} w={10} />
+            </g>
+          )
+        })}
+        <Arm points={armPoints(pose, 1)} o={o} innerFill={innerFill} />
         {/* torso */}
         <rect x={38} y={40} width={24} height={10} fill={o.skin} />
         <rect x={37} y={torsoTop} width={26} height={94 - torsoTop} fill={innerFill} />
@@ -458,7 +457,7 @@ function Front({ outfit: o, time }: FigureProps) {
         <rect x={42} y={16} width={16} height={18} fill={o.skin} />
         <FrontHair o={o} />
         <Hat o={o} front />
-        <Arm points={wave} o={o} innerFill={innerFill} />
+        <Arm points={armPoints(pose, 0)} o={o} innerFill={innerFill} />
       </g>
     </svg>
   )

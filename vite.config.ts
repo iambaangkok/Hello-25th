@@ -1,6 +1,8 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { execFile } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { promisify } from 'node:util'
 import { defineConfig, type Plugin } from 'vite'
 
 // Served from a subpath: https://www.iambaangkok.dev/hello25/
@@ -8,8 +10,9 @@ import { defineConfig, type Plugin } from 'vite'
 // dist/hello25/ and wrangler serves the whole of dist/.
 const BASE = '/hello25/'
 
-// Dev-only: lets the timing tool (timing.html) read and write src/data/<name>.json in the repo.
-const DATA_FILES = ['timing', 'wardrobe']
+// Dev-only: lets the timing tool, crowd and glass editors read and write src/data/<name>.json in the
+// repo. Saving the glass also re-bakes the images the MV shows.
+const DATA_FILES = ['timing', 'wardrobe', 'crowd', 'glass']
 
 function saveData(): Plugin {
   return {
@@ -46,6 +49,7 @@ function saveData(): Plugin {
             JSON.parse(body)
             await mkdir('src/data', { recursive: true })
             await writeFile(file, body)
+            if (name === 'glass') await promisify(execFile)('python3', ['scripts/glass-backgrounds.py', '--bake'])
             res.end('ok')
           } catch (err) {
             res.statusCode = 400

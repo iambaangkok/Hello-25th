@@ -1,0 +1,80 @@
+{
+  "blur": 5.7,
+  "wash": 0.39,
+  "saturation": 1.12,
+  "sheen": 0.15,
+  "months": [
+    {
+      "painting": "dramatic-landscape-illustration.jpg",
+      "x": 0.3125,
+      "y": 0.5909,
+      "w": 0.1963
+    },
+    {
+      "painting": "red-flowers-field-daytime_395237-76.jpg",
+      "x": 0.2075,
+      "y": 0.6743,
+      "w": 0.1771
+    },
+    {
+      "painting": "dramatic-landscape-illustration.jpg",
+      "x": 0.1899,
+      "y": 0.0246,
+      "w": 0.1771
+    },
+    {
+      "painting": "beautiful-anime-flowers-cartoon-scene.jpg",
+      "x": 0.5873,
+      "y": 0,
+      "w": 0.1771
+    },
+    {
+      "painting": "beauty-adorned-purple-pink-generative-ai.jpg",
+      "x": 0.5408,
+      "y": 0.3507,
+      "w": 0.1474
+    },
+    {
+      "painting": "dramatic-landscape-illustration.jpg",
+      "x": 0.5008,
+      "y": 0.2707,
+      "w": 0.1771
+    },
+    {
+      "painting": "dramatic-landscape-illustration.jpg",
+      "x": 0.3318,
+      "y": 0.7886,
+      "w": 0.1771
+    },
+    {
+      "painting": "red-flowers-field-daytime_395237-76.jpg",
+      "x": 0.4239,
+      "y": 0.3436,
+      "w": 0.1771
+    },
+    {
+      "painting": "beauty-adorned-purple-pink-generative-ai.jpg",
+      "x": 0.7591,
+      "y": 0,
+      "w": 0.2
+    },
+    {
+      "painting": "beauty-adorned-purple-pink-generative-ai.jpg",
+      "x": 0.5104,
+      "y": 0.2545,
+      "w": 0.1771
+    },
+    {
+      "painting": "red-flowers-field-daytime_395237-76.jpg",
+      "x": 0.5729,
+      "y": 0.4531,
+      "w": 0.1771
+    },
+    {
+      "painting": "beauty-adorned-purple-pink-generative-ai.jpg",
+      "x": 0.5296,
+      "y": 0.0439,
+      "w": 0.1218
+    }
+  ]
+}

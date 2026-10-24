@@ -4,26 +4,22 @@ import { LINES } from '../lyrics.ts'
 import { MARK_NAMES, MONTH_NAMES, indexAt, type Timing } from '../timing.ts'
 import { GAIT_EASE } from '../gait.ts'
 import { DEFAULT_WARDROBE, withDefaults, type Wardrobe } from '../wardrobe.ts'
+import { EMPTY, fromTiming, type Draft } from './draft.ts'
 import { WardrobeEditor } from './WardrobeEditor.tsx'
 
 // Dev-only tap-along tool for recording the Timing. Served at /hello25/timing.html by `pnpm dev`;
 // not part of the build. Lines are tapped along with the song; Months are set one row at a time
-// (tap M, type a time, nudge, or snap to a Line start), then the Rapid change and the Wave.
+// (tap M, type a time, nudge, or snap to a Line start), then the Rapid change, the Wave and when
+// "Hello 25th!" appears.
 // Below them, the Wardrobe and gait keyframes are edited against the song with a live Figure.
+// A variant (e.g. timing-suggested.html) keeps its own draft and starts from its own data.
 
-// `months` holds every mark in MARK_NAMES order: 12 Months, then Rapid change and Wave.
-type Draft = { lines: number[]; months: (number | null)[]; wardrobe: Wardrobe }
 
 const STORAGE_KEY = 'hello25.timing-tool.draft'
 const LEGACY_TAPS_KEY = 'hello25.timing-tool.taps'
 const LATENCY_KEY = 'hello25.timing-tool.latency'
 const UNDO_LIMIT = 500
 
-const EMPTY: Draft = {
-  lines: [],
-  months: [0, ...Array<null>(MARK_NAMES.length - 1).fill(null)],
-  wardrobe: DEFAULT_WARDROBE,
-}
 // A run of edits to the same field within this long is one undo step.
 const COALESCE_MS = 1000
 
@@ -37,17 +33,9 @@ function parseTime(text: string): number | null {
   return round(Number(m[1] ?? 0) * 60 + Number(m[2]))
 }
 
-function fromTiming(timing: Timing, wardrobe = DEFAULT_WARDROBE): Draft {
-  const months = [...EMPTY.months]
-  timing.months.forEach((t, i) => (months[i] = t))
-  months[MONTH_NAMES.length] = timing.rapid ?? null
-  months[MONTH_NAMES.length + 1] = timing.wave ?? null
-  return { lines: [...timing.lines], months, wardrobe }
-}
-
-function loadDraft(): Draft {
+function loadDraft(storageKey: string, initial?: () => Draft): Draft {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(storageKey)
     if (saved) {
       const draft = JSON.parse(saved) as Draft
       // Drafts from before the Rapid change and Wave marks have only 12 slots.
@@ -55,6 +43,7 @@ function loadDraft(): Draft {
       // Drafts from before the Wardrobe have none.
       return { ...draft, months, wardrobe: draft.wardrobe ? withDefaults(draft.wardrobe) : DEFAULT_WARDROBE }
     }
+    if (initial) return initial()
     // Earlier version of this tool stored a flat tap log.
     const legacy = JSON.parse(localStorage.getItem(LEGACY_TAPS_KEY) ?? '[]') as { kind: string; t: number }[]
     const of = (kind: string) => legacy.filter((tap) => tap.kind === kind).map((tap) => round(tap.t))
@@ -71,9 +60,16 @@ const outOfOrder = (months: (number | null)[], i: number) => {
   return months.slice(0, i).some((prev) => prev !== null && prev >= t)
 }
 
-export default function TimingTool() {
+type Props = {
+  title?: string
+  storageKey?: string
+  // The draft to start from when this variant has none saved yet.
+  initial?: () => Draft
+}
+
+export default function TimingTool({ title = 'Timing tool', storageKey = STORAGE_KEY, initial }: Props) {
   const audio = useRef<HTMLAudioElement>(null)
-  const [draft, setDraftState] = useState<Draft>(loadDraft)
+  const [draft, setDraftState] = useState<Draft>(() => loadDraft(storageKey, initial))
   const latest = useRef(draft)
   const history = useRef<Draft[]>([])
   const [selected, setSelected] = useState(() => Math.max(1, draft.months.findIndex((t) => t === null)))
@@ -85,7 +81,7 @@ export default function TimingTool() {
   const [duration, setDuration] = useState(0)
   const lastChange = useRef({ key: '', at: 0 })
 
-  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)), [draft])
+  useEffect(() => localStorage.setItem(storageKey, JSON.stringify(draft)), [storageKey, draft])
   useEffect(() => localStorage.setItem(LATENCY_KEY, String(latencyMs)), [latencyMs])
 
   // Every change goes through here so Z can undo it, whether it touched Lines or Months.
@@ -227,7 +223,7 @@ export default function TimingTool() {
   const setMonthsCount = draft.months.filter((t) => t !== null).length
   const ordered = draft.months.every((_, i) => !outOfOrder(draft.months, i))
   const complete = draft.lines.length === LINES.length && setMonthsCount === MARK_NAMES.length && ordered
-  const [rapid, wave] = draft.months.slice(MONTH_NAMES.length)
+  const [rapid, wave, hello] = draft.months.slice(MONTH_NAMES.length)
   // Memoised so the Wardrobe preview's gait track is only rebuilt when the marks change.
   const timing: Timing = useMemo(
     () => ({
@@ -235,8 +231,9 @@ export default function TimingTool() {
       months: draft.months.slice(0, MONTH_NAMES.length).filter((t): t is number => t !== null),
       ...(rapid !== null && { rapid }),
       ...(wave !== null && { wave }),
+      ...(hello !== null && { hello }),
     }),
-    [draft.lines, draft.months, rapid, wave],
+    [draft.lines, draft.months, rapid, wave, hello],
   )
   const json = JSON.stringify(timing, null, 2) + '\n'
   const wardrobeJson = JSON.stringify(draft.wardrobe, null, 2) + '\n'
@@ -288,7 +285,7 @@ export default function TimingTool() {
   return (
     <main className="flex h-full flex-col gap-4 overflow-auto bg-neutral-950 p-6 font-sans text-white" style={{ fontWeight: 500 }}>
       <header className="flex flex-wrap items-center gap-4">
-        <h1 className="text-xl font-bold">Timing tool</h1>
+        <h1 className="text-xl font-bold">{title}</h1>
         <audio
           ref={audio}
           src={audioUrl}
@@ -385,7 +382,7 @@ export default function TimingTool() {
 
       <section className="grid items-start gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="mb-2 font-bold">Months, Rapid change, Wave</h2>
+          <h2 className="mb-2 font-bold">Months, Rapid change, Wave, Hello 25th</h2>
           <ol className="space-y-1 text-sm tabular-nums">
             {MARK_NAMES.map((name, i) => (
               <MonthRow

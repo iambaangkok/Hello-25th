@@ -25,3 +25,7 @@ dist-ssr
 
 # Windows download metadata
 *:Zone.Identifier
+
+# Full-size oil paintings for the glass backgrounds; the site ships reduced copies
+# (src/assets/paintings) and baked crops (src/assets/glass) made by scripts/glass-backgrounds.py
+assets/paintings/
