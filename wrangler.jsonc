@@ -10,6 +10,7 @@
   "compatibility_date": "2025-01-01",
   "workers_dev": false,
   "routes": [
+    { "pattern": "iambaangkok.dev/hello25*", "zone_name": "iambaangkok.dev" },
     { "pattern": "www.iambaangkok.dev/hello25*", "zone_name": "iambaangkok.dev" }
   ],
   "assets": {
